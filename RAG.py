@@ -35,7 +35,7 @@ def get_or_create_vectorstore(pdf_paths: List[Path]) -> FAISS:
     # Load and process PDFs
     documents = []
     print("Loading PDFs...")
-    print(f"{pdf_paths = }")
+    
     for pdf_path in pdf_paths:
         loader = PyPDFLoader(str(pdf_path))
         docs = loader.load()
@@ -43,8 +43,8 @@ def get_or_create_vectorstore(pdf_paths: List[Path]) -> FAISS:
         documents.extend(docs)
 
     # Verify document content
-    for doc in documents:
-        print(doc.page_content[:200])  # Print the first 200 characters of each document for verification
+    # for doc in documents:
+    #     print(doc.page_content[:200])  # Print the first 200 characters of each document for verification
 
     # Create embeddings and calculate cost
     vectorstore = FAISS.from_documents(documents, embeddings)
@@ -60,7 +60,7 @@ def setup_chain(vectorstore):
         st.error("Failed to initialize the vector store.")
         return None
 
-    llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+    llm = ChatOpenAI(model="gpt-4-turbo-preview", temperature=0)
     
     # Fixed memory configuration with output_key
     memory = ConversationBufferMemory(
@@ -71,7 +71,7 @@ def setup_chain(vectorstore):
     
     chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
-        retriever=vectorstore.as_retriever(search_kwargs={"k": 5}),  # Increase retrieval depth
+        retriever=vectorstore.as_retriever(search_kwargs={"k": 10}),  # Increase retrieval depth
         memory=memory,
         return_source_documents=True,
         chain_type="map_reduce",  # Use map_reduce for better synthesis from multiple docs
@@ -105,7 +105,7 @@ def main():
         ]
         
         # Create vector store
-        print("\n"*10 + "Loading the vector store ...." + "\n"*10)
+        # print("\n"*10 + "Loading the vector store ...." + "\n"*10)
         st.session_state.vectorstore = get_or_create_vectorstore(pdf_paths)
         print("Loaded the vector store.\n\n")
 
@@ -138,6 +138,9 @@ def main():
         print(f"\n\n ========= User input  = {user_input} =========\n\n")
         # Custom prompt to guide the assistant toward comparison
         # query_prompt = f"Based on the 2023 and 2024 reports, provide a detailed comparison of how increased prices impacted food security in these two years. Use specific findings from each report to highlight any differences."
+        with st.chat_message("user"):
+            st.markdown(user_input)
+        
         query_prompt = user_input
         # Check cache first
         if query_prompt in st.session_state.qa_cache:
@@ -145,14 +148,13 @@ def main():
             query_cost = 0
         else:
             # Get response from model
-            print("Calling conversation chain...")
             response = st.session_state.conversation_chain({"question": query_prompt, "chat_history": st.session_state.chat_history})
             print("Conversation chain response:", response)
             source_documents = response.get("source_documents", [])
-            print(f"\n\n ========= response  = {response} =========\n\n")
+            
             # Debug: Print retrieved documents
             for doc in source_documents:
-                print("Retrieved document:", doc.page_content[:200])  # Print the first 200 characters to verify
+                print("Retrieved document:", doc.metadata)
             
             if source_documents:
                 assistant_response = response["answer"]
@@ -172,8 +174,6 @@ def main():
         st.session_state.chat_history.append({"role": "assistant", "content": assistant_response})
 
         # Display new messages
-        with st.chat_message("user"):
-            st.markdown(user_input)
         with st.chat_message("assistant"):
             st.markdown(assistant_response)
             if query_cost > 0:
