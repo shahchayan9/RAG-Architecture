@@ -34,6 +34,7 @@ def get_or_create_vectorstore(pdf_paths: List[Path]) -> FAISS:
     
     # Load and process PDFs
     documents = []
+    print("Loading PDFs...")
     print(f"{pdf_paths = }")
     for pdf_path in pdf_paths:
         loader = PyPDFLoader(str(pdf_path))
@@ -122,8 +123,8 @@ def main():
         st.session_state.chat_history = []
 
     # Streamlit UI setup
-    st.set_page_config(page_title="PDF Chat Assistant", page_icon="📚", layout="centered")
-    st.title("📚 PDF Chat Assistant")
+    st.set_page_config(page_title="HungerLens Assistant", page_icon="🥗", layout="centered")
+    st.title("HungerLens Assistant 🥗")
 
     # Display chat history
     for message in st.session_state.chat_history:
