@@ -34,6 +34,7 @@ def get_or_create_vectorstore(pdf_paths: List[Path]) -> FAISS:
     
     # Load and process PDFs
     documents = []
+    print(f"{pdf_paths = }")
     for pdf_path in pdf_paths:
         loader = PyPDFLoader(str(pdf_path))
         docs = loader.load()
@@ -48,6 +49,8 @@ def get_or_create_vectorstore(pdf_paths: List[Path]) -> FAISS:
     vectorstore = FAISS.from_documents(documents, embeddings)
     
     # Save vectorstore
+    print("Saving vector store at path:", vectorstore_path)
+
     vectorstore.save_local(str(vectorstore_path))
     return vectorstore
 
@@ -56,7 +59,7 @@ def setup_chain(vectorstore):
         st.error("Failed to initialize the vector store.")
         return None
 
-    llm = ChatOpenAI(model="gpt-4-turbo-preview", temperature=0)
+    llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
     
     # Fixed memory configuration with output_key
     memory = ConversationBufferMemory(
@@ -101,11 +104,14 @@ def main():
         ]
         
         # Create vector store
+        print("\n"*10 + "Loading the vector store ...." + "\n"*10)
         st.session_state.vectorstore = get_or_create_vectorstore(pdf_paths)
+        print("Loaded the vector store.\n\n")
 
     # Initialize conversation chain
     if "conversation_chain" not in st.session_state or st.session_state.conversation_chain is None:
         if st.session_state.vectorstore is not None:
+            print("Setting up the conversation chain with vector store.")
             st.session_state.conversation_chain = setup_chain(st.session_state.vectorstore)
         else:
             st.error("Vector store is not initialized, unable to set up the conversation chain.")
@@ -128,18 +134,21 @@ def main():
     user_input = st.chat_input("Ask about your PDFs...")  # For Streamlit's chat input widget
 
     if user_input:
+        print(f"\n\n ========= User input  = {user_input} =========\n\n")
         # Custom prompt to guide the assistant toward comparison
-        query_prompt = f"Based on the 2023 and 2024 reports, provide a detailed comparison of how increased prices impacted food security in these two years. Use specific findings from each report to highlight any differences."
-
+        # query_prompt = f"Based on the 2023 and 2024 reports, provide a detailed comparison of how increased prices impacted food security in these two years. Use specific findings from each report to highlight any differences."
+        query_prompt = user_input
         # Check cache first
         if query_prompt in st.session_state.qa_cache:
             assistant_response = st.session_state.qa_cache[query_prompt]
             query_cost = 0
         else:
             # Get response from model
+            print("Calling conversation chain...")
             response = st.session_state.conversation_chain({"question": query_prompt, "chat_history": st.session_state.chat_history})
+            print("Conversation chain response:", response)
             source_documents = response.get("source_documents", [])
-            
+            print(f"\n\n ========= response  = {response} =========\n\n")
             # Debug: Print retrieved documents
             for doc in source_documents:
                 print("Retrieved document:", doc.page_content[:200])  # Print the first 200 characters to verify
