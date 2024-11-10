@@ -1,0 +1,10 @@
+os
+typing-extensions
+streamlit
+pathlib
+hashlib
+python-dotenv
+langchain
+openai
+faiss-cpu
+PyMuPDF==1.19.6
