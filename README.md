@@ -7,5 +7,8 @@ creating a LLM-based application interface that answers questions from users bas
 Refer the report attached for architecture and some sample prompts and responses.
 
 ## Usage Instructions
-To run the streamlit application, run the command:
+1. To install all required Python libraries, run the command:
+> pip install -r requirements.txt
+
+2. To run the application, run the command:
 > python3 -m streamlit run RAG.py
