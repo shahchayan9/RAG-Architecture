@@ -124,7 +124,7 @@ def main():
 
     # Streamlit UI setup
     st.set_page_config(page_title="HungerLens Assistant", page_icon="🥗", layout="centered")
-    st.title("HungerLens Assistant 🥗")
+    st.title("HungerLens Assist 🥗")
 
     # Display chat history
     for message in st.session_state.chat_history:
